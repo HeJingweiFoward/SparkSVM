@@ -77,16 +77,20 @@ public class MyJavaSparkLearning1 {
 
 	public static void main(String[] args) throws IOException, URISyntaxException {
 		long startTime=System.currentTimeMillis();
-		SparkConf sparkConf = new SparkConf().setJars(new String[] { "E:\\论文实验\\mjsl1.jar" }).set("spark.executor.memory", "1000m").setMaster("spark://192.168.2.151:7077");
-		SparkSession spark = SparkSession.builder().appName("MyJavaSpark").config(sparkConf).getOrCreate();
+		SparkConf sparkConf = new SparkConf().setJars(new String[] { "E:\\论文实验\\mjsl1.jar" })
+				.set("spark.num.executors", "4")
+				.set("spark.executor.cores", "3")
+				.set("spark.default.parallelism", "36")
+				.set("spark.executor.memory", "5000m").setMaster("spark://192.168.2.151:7077");
+		SparkSession spark = SparkSession.builder().appName("MyJavaSpark1").config(sparkConf).getOrCreate();
 		JavaSparkContext jsc = new JavaSparkContext(spark.sparkContext());
 
 		System.setProperty("HADOOP_USER_NAME", "hadoop");
 		// c,g参数的存储路径
 		String cgPath = "hdfs://192.168.2.151:9000/test/hjw/SvmIn";
 		// c,g参数的数量
-		int cnum = 6;// c
-		int gnum = 6;// g
+		int cnum = 8;// c
+		int gnum = 8;// g
 		// 一次允许运行的Reduce最大数量
 		int maxReduceTask = 16;
 		// 第几次实验
@@ -116,7 +120,7 @@ public class MyJavaSparkLearning1 {
 		System.out.println("开始读取支持向量");
 		Vector<String> svRecords = new Vector<String>();
 		Path pt = new Path(new URI("hdfs://datanode1:9000/SVM/DataSet/a8a"));
-		// 从HDFS读取训练样本
+		// 从HDFS读取训练样本     可以使用广播变量
 		svRecords = ReadTrainFromHDFS(fs, pt);
 		String[] ssvRecords = svRecords.toArray(new String[svRecords.size()]);
 		System.out.println("开始网格搜索");
@@ -150,7 +154,10 @@ public class MyJavaSparkLearning1 {
 			}
 		}
 		System.out.println("最高准确率："+max+"%");
-
+		  //删除参数文件
+		  for(int k = 1;k<=count;k++)
+			  fs.delete(new Path(cgPath +"/"  + String.valueOf(k)),true);		
+		
 
 		
 		/*
