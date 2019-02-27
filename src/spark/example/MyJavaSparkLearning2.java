@@ -59,23 +59,20 @@ public class MyJavaSparkLearning2 {
 				.setJars(new String[] { "E:\\论文实验\\mjsl1.jar" })
 				.set("spark.num.executors", "4")
 				.set("spark.executor.cores", "3")
-				.set("spark.default.parallelism", "36")
-				.set("spark.executor.memory", "6000m")
-				//.setMaster("local[4]");
+				.set("spark.default.parallelism", "20")
+				.set("spark.executor.memory", "2048m")
+			/*	.setMaster("local[4]");*/
 				.setMaster("spark://192.168.2.151:7077");
 		SparkSession spark = SparkSession.builder().appName("MyJavaSpark2").config(sparkConf).getOrCreate();
 		JavaSparkContext jsc = new JavaSparkContext(spark.sparkContext());
 
 		System.setProperty("HADOOP_USER_NAME", "hadoop");
 		// c,g参数的存储路径
-		String cgPath = "hdfs://192.168.2.151:9000/test/hjw/SvmIn";
+/*		String cgPath = "hdfs://192.168.2.151:9000/test/hjw/SvmIn";*/
 		// c,g参数的数量
-		int cnum = 4;// c
-		int gnum = 4;// g
-		// 一次允许运行的Reduce最大数量
-		int maxReduceTask = 16;
-		// 第几次实验
-		int experimentNum = 0;
+		int cnum = 8;// c
+		int gnum = 8;// g
+
 
 	    /**
 	     * 计数器！
@@ -98,6 +95,7 @@ public class MyJavaSparkLearning2 {
 		for (int i = 0; i < cnum; i++) {
 			for (int j = gnum; j > 0; j--) {
 				String sparam = String.valueOf(0.5 + i * 0.25) + "-" + String.valueOf(0.05 + j * 0.0125);
+			/*	String sparam = String.valueOf(i) + "-" +  String.valueOf(Math.pow(10,-j));*/
 				cgList.add(sparam);
 			}
 		}
@@ -106,10 +104,11 @@ public class MyJavaSparkLearning2 {
 		// JavaRDD<String> lines = jsc.textFile(cgPath);
 		// 直接从List读取c,g
 		JavaRDD<String> lines = jsc.parallelize(cgList);
-		System.out.println(lines.collect());
+/*		System.out.println(lines.collect());*/
 
 		System.out.println("开始读取支持向量");
 		Vector<String> svRecords = new Vector<String>();
+/*		Path pt = new Path(new URI("hdfs://datanode1:9000/SVM/DataSet/a8a"));*/
 		Path pt = new Path(new URI("hdfs://datanode1:9000/SVM/DataSet/a8a"));
 		// 从HDFS读取训练样本
 		svRecords = ReadTrainFromHDFS(fs, pt);
@@ -127,8 +126,10 @@ public class MyJavaSparkLearning2 {
 				System.out.println("开始交叉验证");
 				// 使用广播变量中的支持向量
 				String[] svr = (String[]) broadcastssvRecords.value().toArray();
-				MSSvmTrainer svmTrainer = new MSSvmTrainer(svr, Double.parseDouble(s.split("-")[0]),
-						Double.parseDouble(s.split("-")[1]));
+				Double c=Double.valueOf(s.split("-")[0]);
+				Double g=Double.valueOf(s.split("-")[1]);
+				
+				MSSvmTrainer svmTrainer = new MSSvmTrainer(svr, c,g);
 				/*
 				 * MSSvmTrainer svmTrainer = new MSSvmTrainer(ssvRecords,
 				 * Double.parseDouble(s.split("-")[0]),
