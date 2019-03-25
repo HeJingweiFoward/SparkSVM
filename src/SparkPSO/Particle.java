@@ -64,9 +64,9 @@ public class Particle implements Serializable{
 	//适应值
     public double fitness;
     
-    
-	public  double Xmin = 0.01;
-	public  double Xmax = 4;
+    //2 -8次方到2 8次方     2 -2次方到2 2次方
+	public  double Xmin = Math.pow(2, -2);
+	public  double Xmax = Math.pow(2, 2);
 
     
     

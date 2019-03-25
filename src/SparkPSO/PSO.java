@@ -29,7 +29,8 @@ public class PSO {
 
 	private static int c1, c2 = 2;
 
-	private static double w = 1.4;// 惯性因子
+	private static double Wmax = 0.9;// 惯性权重   惯性权重采用LDW线性递减策略
+	private static double Wmin=0.1;
 
 	private static List<Particle> particles = new ArrayList<Particle>();// 粒子群
 
@@ -70,9 +71,11 @@ public class PSO {
 	/**
 	 * 跟新每个粒子的速度
 	 */
-	public static void updateV() {
+	public static void updateV(int k) {
+		double w=Wmax-(Wmax-Wmin)*(k/N);
 		for (Particle particle : particles) {
 			for (int i = 0; i < particle.dimension; i++) {
+			
 				double v = w * particle.V[i] + c1 * rand() * (particle.pbest[i] - particle.X[i])
 						+ c2 * rand() * (gbest[i] - particle.X[i]);
 				if (v > particle.Vmax)
@@ -173,7 +176,7 @@ public class PSO {
 		System.out.println("粒子群初始化完毕，开始迭代！");
 		
 		while (n++ < N) {
-			updateV();
+			updateV(n);
 			updateX();
 			//updatepBest();
 			Dataset<Particle> updatepBestParticleDF = spark.createDataset(particles,particleEncoder);
