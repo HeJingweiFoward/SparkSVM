@@ -65,8 +65,8 @@ public class Particle implements Serializable{
     public double fitness;
     
     //2 -8次方到2 8次方     2 -2次方到2 2次方
-	public  double Xmin = Math.pow(2, -2);
-	public  double Xmax = Math.pow(2, 2);
+	public  double Xmin = Math.pow(2, -8);
+	public  double Xmax = Math.pow(2, 8);
 
     
     
@@ -79,7 +79,8 @@ public class Particle implements Serializable{
     public double calculateFitness() throws IOException, URISyntaxException {
     	Vector<String> svRecords = new Vector<String>();
     	FileSystem fs = FileSystem.get(new URI("hdfs://192.168.2.151:9000"), new Configuration());
-    	Path pt = new Path(new URI("hdfs://datanode1:9000/SVM/DataSet/a8a"));
+    	/*Path pt = new Path(new URI("hdfs://datanode1:9000/SVM/DataSet/a8a"));*/
+    	Path pt = new Path(new URI("hdfs://datanode1:9000/test/hjw/sample/a5a"));
 		svRecords = ReadTrainFromHDFS(fs, pt);
 		String[] svr = svRecords.toArray(new String[svRecords.size()]);  
 		MSSvmTrainer svmTrainer = new MSSvmTrainer(svr, X[0],X[1]);

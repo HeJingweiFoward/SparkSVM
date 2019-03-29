@@ -15,8 +15,8 @@ public class MSSvmTrainer {
 	    private int max_index = 0;
 	    private String[] subsetRecords;
 	    //private int nr_fold = 10;
-	    //改成做4折交叉验证
-	    private int nr_fold = 4;
+	    //改成做4折交叉验证   改成5折
+	    private int nr_fold = 5;
 	    
 	    public MSSvmTrainer(String[] subsetRecords,double c,double g){
 	        this.subsetRecords = subsetRecords;

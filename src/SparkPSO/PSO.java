@@ -22,10 +22,12 @@ public class PSO {
 	private static double[] gbest;// 全局最优位置
 
 	private static double gbest_fitness = Double.MAX_VALUE;// 全局最优位置对应的fitness
+	
+	private static double previous=Double.MAX_VALUE;
 
-	private static int particle_num = 12;// 粒子数
+	private static int particle_num = 36;// 粒子数
 
-	private static int N = 4;// 迭代次数
+	private static int N = 16;// 迭代次数
 
 	private static int c1, c2 = 2;
 
@@ -72,7 +74,12 @@ public class PSO {
 	 * 跟新每个粒子的速度
 	 */
 	public static void updateV(int k) {
-		double w=Wmax-(Wmax-Wmin)*(k/N);
+		//线性递减策略
+		//double w=Wmax-(Wmax-Wmin)*(k*1.0/N);
+		//非线性递减策略
+		double w=Wmin+(Wmax-Wmin)*Math.exp(-20*Math.pow(k*1.0/N, 6));
+		//System.out.println("k:"+k+",k/N:"+(k*1.0/N)+",w:"+w);
+		System.out.println("k:"+k+",Math.exp(-20*Math.pow(k*1.0/N, 6)):"+Math.exp(-20*Math.pow(k*1.0/N, 6))+",w:"+w);
 		for (Particle particle : particles) {
 			for (int i = 0; i < particle.dimension; i++) {
 			
@@ -145,7 +152,8 @@ public class PSO {
 				.set("spark.executor.memory", "2048m")
 				.set("spark.network.timeout", "300")
 				.setMaster("spark://192.168.2.151:7077");
-		SparkSession spark = SparkSession.builder().appName("MyJavaSpark4").config(sparkConf).getOrCreate();
+			/*	.setMaster("local[4]");*/
+		SparkSession spark = SparkSession.builder().appName("MyJavaSparkPSO").config(sparkConf).getOrCreate();
 		JavaSparkContext jsc = new JavaSparkContext(spark.sparkContext());
 		System.setProperty("HADOOP_USER_NAME", "hadoop");
 		

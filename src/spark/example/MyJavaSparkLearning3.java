@@ -77,9 +77,9 @@ public class MyJavaSparkLearning3 {
 
 		System.setProperty("HADOOP_USER_NAME", "hadoop");
 		// c,g参数的数量
-		int cnum =4;// c
+/*		int cnum =4;// c
 		int gnum = 4;// g
-
+*/
 	    /**
 	     * 计数器！
 	     */
@@ -89,22 +89,20 @@ public class MyJavaSparkLearning3 {
 		// 生成c,g，向HDFS中写入c,g
 		FileSystem fs = FileSystem.get(new URI("hdfs://192.168.2.151:9000"), new Configuration());
 
-		// 测试从一个文件读取参数 或者直接将参数写入RDD、DataFrame
+		// 测试从一个文件读取参数 或者直接将参数写入RDD、DataFrame、DataSet
 		List<CG> cgList = new ArrayList<CG>();
-		for (int i = 0; i < cnum; i++) {
+/*		for (int i = 0; i < cnum; i++) {
 			for (int j = gnum; j > 0; j--) {
-				/*String sparam = String.valueOf(0.5 + i * 0.25) + "-" + String.valueOf(0.05 + j * 0.0125);*/
-			/*	String sparam = String.valueOf(i) + "-" +  String.valueOf(Math.pow(10,-j));*/						
-				/*cgList.add(new CG(0.5 + i * 0.25,0.05 + j * 0.0125));*/
 				CG cg=new CG();
 				cg.setC(0.5 + i * 0.25);
 				cg.setG(0.05 + j * 0.0125);
 				cgList.add(cg);
 			}
-		}
-
+		}*/
+		cgList= GeneratingParameters.CG(0.05, Math.pow(2, -4), Math.pow(2, 2));
+		System.out.println(cgList.size());
 		// 直接从List读取c,g
-		//JavaRDD<String> lines = jsc.parallelize(cgList);
+	
 		Encoder<CG> cgEncoder = Encoders.bean(CG.class);
 		Dataset<CG> cgDF = spark.createDataset(cgList,cgEncoder);
 
@@ -113,7 +111,8 @@ public class MyJavaSparkLearning3 {
 		System.out.println("开始读取支持向量");
 		Vector<String> svRecords = new Vector<String>();
 		/*Path pt = new Path(new URI("hdfs://datanode1:9000/SVM/DataSet/covtypebinaryscale"));*/
-		Path pt = new Path(new URI("hdfs://datanode1:9000/SVM/DataSet/a8a"));
+		/*Path pt = new Path(new URI("hdfs://datanode1:9000/SVM/DataSet/a8a"));*/
+		Path pt = new Path(new URI("hdfs://datanode1:9000/test/hjw/sample/a5a"));
 		// 从HDFS读取训练样本
 		svRecords = ReadTrainFromHDFS(fs, pt);
 		// 使用广播变量
@@ -122,24 +121,7 @@ public class MyJavaSparkLearning3 {
 
 		System.out.println("开始网格搜索");
 		// 开始并行网格搜索，交叉验证
-	/*	JavaPairRDD<String, String> mapToPairLines = lines.mapToPair(new PairFunction<String, String, String>() {
-			public Tuple2<String, String> call(String s) throws Exception {
 
-				System.out.println("开始交叉验证");
-				// 使用广播变量中的支持向量
-				String[] svr = (String[]) broadcastssvRecords.value().toArray();
-				Double c=Double.valueOf(s.split("-")[0]);
-				Double g=Double.valueOf(s.split("-")[1]);
-				
-				MSSvmTrainer svmTrainer = new MSSvmTrainer(svr, c,g);
-
-				//计数
-				accumulator.add(1);
-				String acc = svmTrainer.do_cross_validation();
-				System.out.println("交叉验证结束");
-				return new Tuple2(s, acc);
-			}
-		});*/
 
 		// 使用reduce排序
 /*		Tuple2<String, String> maxACC = mapToPairLines.reduce((x, y) -> {
@@ -149,10 +131,10 @@ public class MyJavaSparkLearning3 {
 				return y;
 			}
 		});*/
-		Encoder<Double> doubleEncoder = Encoders.DOUBLE();
-		Dataset<Double> cgMap=cgDF.map(new MapFunction<CG,Double>() {
+		Encoder<Result> resultEncoder = Encoders.bean(Result.class);
+		Dataset<Result> cgMap=cgDF.map(new MapFunction<CG,Result>() {
 			@Override
-			public Double call(CG cg) throws Exception {
+			public Result call(CG cg) throws Exception {
 				// TODO Auto-generated method stub
 				System.out.println("开始交叉验证");
 				// 使用广播变量中的支持向量
@@ -162,11 +144,23 @@ public class MyJavaSparkLearning3 {
 				accumulator.add(1);
 				double acc =Double.parseDouble(svmTrainer.do_cross_validation().replace("%", "")) ;
 				System.out.println("交叉验证结束");
-				return acc;
+				Result result=new Result();
+				result.setC(cg.getC());
+				result.setG(cg.getG());
+				result.setACC(acc);
+				return result;
 			}
-		}, doubleEncoder);
+		}, resultEncoder);
 		//在这里使用show()导致分多次提交job
-		cgMap.collect();
+	
+		double max = Double.MIN_VALUE;
+		for (Result result : cgMap.collectAsList()) {
+
+			if (result.ACC> max) {
+				max = result.ACC;
+				System.out.println(result.C+","+result.G+",准确率：" + max);
+			}
+		}
 		
 		long endTime = System.currentTimeMillis();
 		System.out.println("网格搜索结束，用时：" + (endTime - startTime));
