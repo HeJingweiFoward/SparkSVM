@@ -1,4 +1,4 @@
-package SparkPSO;
+package SparkPSO.test1;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -30,7 +30,9 @@ public class Particle implements Serializable {
 	public double[] V = new double[dimension];
 
 	// 最大速度
-	public double Vmax = 1;
+	public double Vmax = 2;
+	//最小速度
+	public double Vmin=0.2;
 
 	public double[] getX() {
 		return X;
@@ -60,9 +62,15 @@ public class Particle implements Serializable {
 	public double fitness;
 
 	// 2 -8次方到2 8次方 2 -2次方到2 2次方 2 -6次方到2 6次方 2 -7次方到2 7次方
-	public double Xmin = Math.pow(2, -8);
-	public double Xmax = Math.pow(2, 8);
+	//public double Xmin = Math.pow(2, -8);
+	//public double Xmax = Math.pow(2, 8);//通过第一次迭代确定第二次的搜索范围
 
+	public double Cmin=Math.pow(2, -5);
+	public double Cmax=Math.pow(2, 14);
+	
+	public double Gmin=Math.pow(2, -15);
+	public double Gmax=Math.pow(2, -4);
+	
 	/**
 	 * 根据当前位置计算适应值
 	 * 
@@ -108,33 +116,37 @@ public class Particle implements Serializable {
 	}
 
 	public void initialX() {
-		/*
-		 * for(int i=0;i<dimension;i++) { X[i] = Xmin + new
-		 * Random().nextDouble() * (Xmax - Xmin); pbest[i] = X[i]; }
-		 */
-		initialcgArr();
-/*		int cIndex=(int) Math.random() * c.length;
-		int gIndex=(int) Math.random() * g.length;*/
-		int cIndex=new Random().nextInt(20);
-		int gIndex=new Random().nextInt(20);
-		X[0] = c[cIndex];
-		X[1] = g[gIndex];
-		//System.out.println(cIndex+","+gIndex+";"+X[0]+","+X[1]);
 
+/*		for (int i = 0; i < dimension; i++) {
+			X[i] = Xmin + new Random().nextDouble() * (Xmax - Xmin);
+			pbest[i] = X[i];
+		}*/
+		
+		X[0] = Cmin + new Random().nextDouble() * (Cmax -Cmin);
+		X[1] = Gmin + new Random().nextDouble() * (Gmax - Gmin);
 		pbest[0] = X[0];
 		pbest[1] = X[1];
+		/*
+		 * initialcgArr(); int cIndex=new Random().nextInt(20); int gIndex=new
+		 * Random().nextInt(20); X[0] = c[cIndex]; X[1] = g[gIndex];
+		 * 
+		 * 
+		 * pbest[0] = X[0]; pbest[1] = X[1];
+		 */
 	}
 
 	/**
 	 * 初始化自己的速度
 	 */
 	public void initialV() {
+
+		for (int i = 0; i < dimension; i++) {
+			V[i] = Vmin + new Random().nextDouble() * (Vmax - Vmin);
+		}
+
 		/*
-		 * for(int i=0;i<dimension;i++) { V[i] =-Vmax + new
-		 * Random().nextDouble() * (Vmax - (-Vmax)); }
+		 * V[0] = 2.0; V[1] = 0.02;
 		 */
-		V[0] = 2.0;
-		V[1] = 0.02;
 	}
 
 	// 从HDFS读取支持向量样本

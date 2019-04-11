@@ -1,4 +1,4 @@
-package SparkPSO;
+package SparkPSO.test1;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -23,11 +23,13 @@ public class PSO {
 
 	private static double gbest_fitness = Double.MAX_VALUE;// 全局最优位置对应的fitness
 	
-	private static double previous=Double.MAX_VALUE;
+	private static double previous_gbest_fitness =Double.MAX_VALUE;
+	
+	private static int gbest_fitness_stopcount=0;
 
 	private static int particle_num = 40;// 粒子数
 
-	private static int N = 32;// 迭代次数
+	private static int N = 16;// 迭代次数
 
 	private static int c1, c2 = 2;
 
@@ -74,7 +76,7 @@ public class PSO {
 	}
 
 	/**
-	 * 跟新每个粒子的速度
+	 * 跟新每个粒子的速度(没有陷入局部最优解)
 	 */
 	public static void updateV(int k) {
 		//线性递减策略
@@ -90,13 +92,34 @@ public class PSO {
 						+ c2 * rand() * (gbest[i] - particle.X[i]);
 				if (v > particle.Vmax)
 					v = particle.Vmax;
-				else if (v < -particle.Vmax)
-					v = -particle.Vmax;
+				else if (v < particle.Vmin)
+					v =particle.Vmin;
 				particle.V[i] = v;// 更新Vi
 			}
 		}
 	}
+/**
+ * 跟新每个粒子的速度(陷入局部最优解)
+ * @param k
+ */
+	public static void updateVmax(int k) {
 
+		double w=Wmax;
+	
+
+		for (Particle particle : particles) {
+			for (int i = 0; i < particle.dimension; i++) {
+			
+				double v = w * particle.V[i] + c1 * rand() * (particle.pbest[i] - particle.X[i])
+						+ c2 * rand() * (gbest[i] - particle.X[i]);
+				if (v > particle.Vmax)
+					v = particle.Vmax;
+				else if (v <particle.Vmin)
+					v = particle.Vmin;
+				particle.V[i] = v;// 更新Vi
+			}
+		}
+	}
 	/**
 	 * 更新每个粒子的位置和pbest 把更新粒子位置和pBest分开
 	 * 
@@ -164,12 +187,12 @@ public class PSO {
 	
 		int n = 0;
 		System.out.println("粒子群初始化！");
-		//initialParticles();
 		for (int i = 0; i < particle_num; i++) {
 			Particle particle = new Particle();
 			particle.initialX();
 			System.out.println("c:"+particle.X[0]+",g:"+particle.X[1]);
 			particle.initialV();
+			System.out.println("cv:"+particle.V[0]+",gv:"+particle.V[1]);
 			particles.add(particle);
 		}
 		Dataset<Particle> initialParticleDF = spark.createDataset(particles,particleEncoder);
@@ -185,12 +208,18 @@ public class PSO {
 		particles= initialParticleMap.collectAsList();
 				
 		updateGbest();
+	/*	previous_gbest_fitness=gbest_fitness;*/
 		System.out.println("粒子群初始化完毕，开始迭代！");
 		
 		while (n++ < N) {
-			updateV(n);
+/*			if (gbest_fitness_stopcount>=2) {
+				updateVmax(gbest_fitness_stopcount);
+			}
+			else {*/
+				updateV(n);
+			/*}*/
 			updateX();
-			//updatepBest();
+
 			Dataset<Particle> updatepBestParticleDF = spark.createDataset(particles,particleEncoder);
 			Dataset<Particle> updatepBestParticleMap=updatepBestParticleDF.map(new MapFunction<Particle,Particle>() {
 				@Override
@@ -208,10 +237,16 @@ public class PSO {
 				}
 			}, particleEncoder);
 			particles= updatepBestParticleMap.collectAsList();
-			
 			updateGbest();
-			System.out.println(
-					"**************第" + n + ".当前gbest:(" + gbest[0] + "," + gbest[1] + ")  fitness=" + gbest_fitness);
+/*			if (previous_gbest_fitness==gbest_fitness) {
+				gbest_fitness_stopcount++;
+				System.out.println("gbest_fitness_stopcount:"+gbest_fitness_stopcount);
+			}
+			else {
+				previous_gbest_fitness=gbest_fitness;
+				gbest_fitness_stopcount=0;
+			}*/
+			System.out.println("**************第" + n + ".当前gbest:(" + gbest[0] + "," + gbest[1] + ")  fitness=" + gbest_fitness);
 		}
 	}
 

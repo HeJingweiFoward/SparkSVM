@@ -106,7 +106,7 @@ public class MyJavaSparkLearning2 {
 		// 从HDFS读取c,g
 		// JavaRDD<String> lines = jsc.textFile(cgPath);
 		// 直接从List读取c,g
-		JavaRDD<String> lines = jsc.parallelize(cgList);
+		JavaRDD<String> lines = jsc.parallelize(cgList,64);
 /*		System.out.println(lines.collect());*/
 
 		System.out.println("开始读取支持向量");
