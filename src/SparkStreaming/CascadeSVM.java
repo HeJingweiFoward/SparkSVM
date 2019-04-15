@@ -79,12 +79,6 @@ public class CascadeSVM  {
 					String[] svRecordArr=svRecords.toArray(new String[svRecords.size()]);
 					MSSvmTrainer mSvmTrainer=new MSSvmTrainer(svRecordArr);
 					svm_model model= mSvmTrainer.train();
-				/*	svm.svm_save_model("model/"+TaskContext.getPartitionId()+".txt", model);				
-					Copy copy=new Copy("model/"+TaskContext.getPartitionId()+".txt", "hdfs://192.168.2.151:9000/test/hjw/model");*/
-					//在这里可以利用广播变量
-					/*SaveSvsToHDFS saveSvsToHDFS=new SaveSvsToHDFS(fs, "hdfs://192.168.2.151:9000/test/hjw/model/"+TaskContext.getPartitionId()+".txt", model);*/
-				/*	SaveSvsToHDFS saveSvsToHDFS=new SaveSvsToHDFS();
-					Svs=saveSvsToHDFS.SaveSvsToList(model);*/
 					int[] svIndices = model.sv_indices;
 					for(int i=0; i<svIndices.length; i++) {
 						Svs.add(svRecordArr[svIndices[i]-1]);
@@ -114,10 +108,6 @@ public class CascadeSVM  {
 					String[] svRecordArr=svRecords.toArray(new String[svRecords.size()]);
 					MSSvmTrainer mSvmTrainer=new MSSvmTrainer(svRecordArr);
 					svm_model model= mSvmTrainer.train();
-				/*	svm.svm_save_model("model/"+TaskContext.getPartitionId()+".txt", model);				
-					Copy copy=new Copy("model/"+TaskContext.getPartitionId()+".txt", "hdfs://192.168.2.151:9000/test/hjw/model");*/
-	/*				SaveSvsToHDFS saveSvsToHDFS=new SaveSvsToHDFS();
-					Svs=saveSvsToHDFS.SaveSvsToList(model);*/
 					/*repartitionNum.add(1);*/
 					int[] svIndices = model.sv_indices;
 					for(int i=0; i<svIndices.length; i++) {
@@ -143,11 +133,16 @@ public class CascadeSVM  {
 				if (svRecords.size()>0) {
 					MSSvmTrainer mSvmTrainer=new MSSvmTrainer(svRecords.toArray(new String[svRecords.size()]));
 					svm_model model= mSvmTrainer.train();
-				/*	SaveSvsToHDFS saveSvsToHDFS=new SaveSvsToHDFS();
-					Svs=saveSvsToHDFS.SaveSvsToList(model);*/
-/*					svm.svm_save_model("model/"+TaskContext.getPartitionId()+".txt", model);				
-					Copy copy=new Copy("model/"+TaskContext.getPartitionId()+".txt", "hdfs://192.168.2.151:9000/test/hjw/model");*/
-	
+					SaveSvsToHDFS saveSvsToHDFS=new SaveSvsToHDFS();
+					Configuration configuration=new Configuration();
+					String modelHDFSPath="/test/hjw/model/model.txt";	
+					saveSvsToHDFS.SvmSaveModelToHDFS(model, configuration,modelHDFSPath);
+					//预测
+					String testHDFSPath="/test/hjw/testSet/a6a.t";
+					String predictHDFSPath="/test/hjw/predict/a6apredict.txt";
+					ModifiedPredict.CascadePredict(configuration, model, testHDFSPath, predictHDFSPath);
+					
+					
 					System.out.println("第三层每个分区支持向量数量Svs.size()："+Svs.size());
 				}
 				return Svs.iterator();
