@@ -44,8 +44,8 @@ public final class JavaWordCount {
       .getOrCreate();*/
 
     
-    SparkConf sparkConf = new SparkConf().setAppName("Java8WordCount").setMaster("spark://192.168.2.151:7077").set("spark.executor.memory", "1000m")
-    		.setJars(new String[]{"F:\\研二\\科研\\Java8WordCount.jar"});
+    SparkConf sparkConf = new SparkConf().setAppName("Java8WordCount").setMaster("spark://192.168.2.151:7077").set("spark.executor.memory", "2048m")
+    		.setJars(new String[]{"E:\\论文实验\\mjsl1.jar"});
     JavaSparkContext jsc = new JavaSparkContext(sparkConf);
 /*    jsc.addJar("F:\\研二\\科研\\Java8WordCount.jar");*/
     

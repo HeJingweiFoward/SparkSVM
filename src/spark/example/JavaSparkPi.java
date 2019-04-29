@@ -13,7 +13,9 @@ public final class JavaSparkPi {
     public static void main(String[] args) throws Exception {
     	 System.setProperty("HADOOP_USER_NAME", "hadoop");
         //SparkConf sparkConf = new SparkConf().setAppName("JavaSparkPi").setMaster("spark://192.168.2.151:7077").set("spark.executor.memory", "1000m");
-    	 SparkConf sparkConf = new SparkConf().setAppName("JavaSparkPi").setMaster("local");
+    	 //SparkConf sparkConf = new SparkConf().setAppName("JavaSparkPi").setMaster("local");
+    	 SparkConf sparkConf = new SparkConf().setAppName("JavaSparkPi").setMaster("spark://192.168.2.99:7077").set("spark.executor.memory", "2048m")
+    			 .setJars(new String[]{"E:\\论文实验\\mjsl1.jar"});
         JavaSparkContext jsc = new JavaSparkContext(sparkConf);
         //jsc.addJar("E:\\Pi.jar");
         long start = System.currentTimeMillis();

@@ -59,6 +59,9 @@ public class MyJavaSparkLearning3 {
 	}
 	
 	public static void main(String[] args) throws IOException, URISyntaxException {
+		
+		String sampleHDFSPath=args[0];
+		
 		// TODO Auto-generated method stub
 		long startTime = System.currentTimeMillis();
 		SparkConf sparkConf = new SparkConf()
@@ -99,7 +102,8 @@ public class MyJavaSparkLearning3 {
 				cgList.add(cg);
 			}
 		}*/
-		cgList= GeneratingParameters.CG(0.05, Math.pow(2, -4), Math.pow(2, 2));
+		//cgList= GeneratingParameters.CG(0.05, Math.pow(2, -4), Math.pow(2, 2));
+		cgList= GeneratingParameters.CG(0.1,0.001,0.0,0.0,4.0,0.032);
 		System.out.println(cgList.size());
 		// 直接从List读取c,g
 	
@@ -112,7 +116,7 @@ public class MyJavaSparkLearning3 {
 		Vector<String> svRecords = new Vector<String>();
 		/*Path pt = new Path(new URI("hdfs://datanode1:9000/SVM/DataSet/covtypebinaryscale"));*/
 		/*Path pt = new Path(new URI("hdfs://datanode1:9000/SVM/DataSet/a8a"));*/
-		Path pt = new Path(new URI("hdfs://datanode1:9000/test/hjw/sample/a5a"));
+		Path pt = new Path(new URI(sampleHDFSPath));
 		// 从HDFS读取训练样本
 		svRecords = ReadTrainFromHDFS(fs, pt);
 		// 使用广播变量

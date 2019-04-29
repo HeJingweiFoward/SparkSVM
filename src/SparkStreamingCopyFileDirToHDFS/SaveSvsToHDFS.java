@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
@@ -37,7 +39,10 @@ public class SaveSvsToHDFS implements Serializable{
 			
 		    FileSystem fs = FileSystem.get(new URI("hdfs://datanode1:9000"),configuration);
 			//String pathStrModel  = "/test/hjw/model/model.txt";	
-		    String pathStrModel  =modelHDFSPath;
+		    
+		    SimpleDateFormat df = new SimpleDateFormat("yyyyMMddHHmmss");
+		    String pathStrModel  =modelHDFSPath+df.format(new Date())+".txt";
+		    
 			Path file = new Path(pathStrModel);
 			FSDataOutputStream fos = fs.create(file,true);
 		
@@ -174,4 +179,20 @@ public class SaveSvsToHDFS implements Serializable{
 		
 		return Svs;
 	}
+	
+	
+	public void SaveSvsCGToHDFS(svm_model model,Configuration configuration,	List<String>Svs,String svscgHDFSPath) throws IOException, URISyntaxException {
+	    FileSystem fs = FileSystem.get(new URI("hdfs://datanode1:9000"),configuration);
+	    SimpleDateFormat df = new SimpleDateFormat("yyyyMMddHHmmss");
+	    String path  =svscgHDFSPath+df.format(new Date())+".txt";
+		Path file = new Path(path);
+		FSDataOutputStream fos = fs.create(file,true);
+		fos.writeBytes("c:"+model.param.C+"       g:"+model.param.gamma+"\n");
+		for (String sv : Svs) {
+			fos.writeBytes(sv+"\n");
+		}
+		
+		fos.close();
+	}
+	
 }

@@ -10,6 +10,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.StringTokenizer;
 
 import org.apache.hadoop.conf.Configuration;
@@ -172,7 +174,10 @@ public class ModifiedPredict {
 			//DataOutputStream output = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(argv[i+2])));
 		    FileSystem fs = FileSystem.get(new URI("hdfs://datanode1:9000"),configuration);
 		    FSDataInputStream testInputStream = fs.open(new Path(testHDFSPath));
-		    FSDataOutputStream predictOutputStream = fs.create(new Path(predictHDFSPath),true);
+		    
+		    SimpleDateFormat df = new SimpleDateFormat("yyyyMMddHHmmss");
+		    
+		    FSDataOutputStream predictOutputStream = fs.create(new Path(predictHDFSPath+df.format(new Date())+".txt"),true);
 			//svm_model model = svm.svm_load_model(argv[i+1]);
 		    svm_model model=svmModel;
 			

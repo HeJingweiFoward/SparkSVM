@@ -2,5 +2,6 @@
 /SparkPSO/
 /SparkStreaming/
 /SparkStreamingCopyFileDirToHDFS/
+/common/
 /parallelSVM/
 /spark/
