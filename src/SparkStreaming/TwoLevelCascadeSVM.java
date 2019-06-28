@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Vector;
 
+import org.apache.commons.collections.IteratorUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.spark.SparkConf;
@@ -17,7 +18,7 @@ import org.apache.spark.api.java.function.FlatMapFunction;
 import SparkStreamingCopyFileDirToHDFS.SaveSvsToHDFS;
 import libsvm.svm_model;
 
-public class CommonCascadeSVM {
+public class TwoLevelCascadeSVM {
 	public static void main(String[] args) throws InterruptedException, IOException, URISyntaxException {
 		
 		 
@@ -27,11 +28,11 @@ public class CommonCascadeSVM {
 		String predictHDFSPath=args[3];
 		String svscgHDFSPath=args[4];
 		
-		SparkConf conf = new SparkConf().setAppName("SparkCommonCascadeSVM").setJars(new String[] { "E:\\论文实验\\mjsl1.jar" })
+		SparkConf conf = new SparkConf().setAppName("TwoLevelCascadeSVM").setJars(new String[] { "E:\\论文实验\\mjsl1.jar" })
 				.set("spark.network.timeout", "300")
 				.set("spark.num.executors", "4")
 				.set("spark.executor.cores", "3")
-				.set("spark.executor.memory", "4096m")
+				.set("spark.executor.memory", "2048m")
 				.set("spark.default.parallelism", "12")
 				.set("spark.executor.extraJavaOptions", "-verbose:gc -XX:+PrintGCDetails -XX:+PrintGCTimeStamps")
 				.setMaster("spark://192.168.2.151:7077");
@@ -41,7 +42,6 @@ public class CommonCascadeSVM {
 		sc.setLogLevel("WARN");
 		
 		FileSystem fs = FileSystem.get(new URI("hdfs://192.168.2.151:9000"),new Configuration());    
-		//JavaRDD<String> lines = sc.textFile(sampleHDFSPath,12).cache();
 		JavaRDD<String> lines = sc.textFile(sampleHDFSPath).cache().repartition(12);
 		double startTime=System.currentTimeMillis();
 		
@@ -69,7 +69,6 @@ public class CommonCascadeSVM {
 			}
 		});
 		
-	/*	LongAccumulator repartitionNum = CascadeSVM.getInstance(sc);*/		
 		//6    ---   4
 		JavaRDD<String>svs2=svs1.cache().repartition(6).mapPartitions(new FlatMapFunction<Iterator<String>, String>() {
 			/**
@@ -98,8 +97,74 @@ public class CommonCascadeSVM {
 				return Svs.iterator();
 			}
 		});
+
+		System.out.println("svs2.count():"+svs2.count());
 		
-		JavaRDD<String>svs3=svs2.cache().repartition(1).mapPartitions(new FlatMapFunction<Iterator<String>, String>() {
+		//svs2.cache().repartition(1).saveAsTextFile(svscgHDFSPath);
+		
+		//List和广播变量在map内应该是只读，不能对其进行add操作
+	
+		JavaRDD<String>twoLevelSvs= svs2.repartition(1).cache();
+		// lable:1
+		JavaRDD<String>PositiveSvs= twoLevelSvs.mapPartitions(new  FlatMapFunction<Iterator<String>, String>() {
+			/**
+			 * 
+			 */
+			private static final long serialVersionUID = 2300783931514320728L;
+			List<String> PositiveRecords = new ArrayList<String>();
+			@Override
+			public Iterator<String> call(Iterator<String> arg0) throws Exception {
+				// TODO Auto-generated method stub
+				List<String>svs= IteratorUtils.toList(arg0);
+		/*		for (Iterator<String> it=arg0;it.hasNext();) {
+					if (it.next().split(" ")[0].equals("1")) {
+						PositiveRecords.add(it.next());
+					}			
+				} 	*/	
+				for (String string : svs) {
+					if (!string.split(" ")[0].equals("-1")) {
+						PositiveRecords.add(string);
+					}	
+				}
+				return PositiveRecords.iterator();
+			}
+		});
+		
+		//lable: -1
+		JavaRDD<String>NegativeSvs=twoLevelSvs.mapPartitions(new  FlatMapFunction<Iterator<String>, String>() {			
+			/**
+			 * 
+			 */
+			private static final long serialVersionUID = -8441737558968376929L;
+			List<String> NegativeRecords = new ArrayList<String>();
+			@Override
+			public Iterator<String> call(Iterator<String> arg0) throws Exception {
+				// TODO Auto-generated method stub
+				
+				List<String>svs= IteratorUtils.toList(arg0);
+				
+		/*		for (Iterator<String> it=arg0;it.hasNext();) {
+					if (it.next().split(" ")[0].equals("-1")) {
+						NegativeRecords.add(it.next());
+					}			
+				} 	*/	
+				for (String string : svs) {
+					if (string.split(" ")[0].equals("-1")) {
+						NegativeRecords.add(string);
+					}	
+				}
+				
+				return NegativeRecords.iterator();
+			}
+		});
+				
+		System.out.println("PositiveSvs Size:"+PositiveSvs.count()+";NegativeSvs Size:"+NegativeSvs.count());
+		
+		
+		JavaRDD<String>Positive80TrainSet= PositiveSvs.sample(false, 1);
+		JavaRDD<String>Negative80TrainSet= NegativeSvs.sample(false, 1);
+		
+		JavaRDD<String>svs3=Positive80TrainSet.union(Negative80TrainSet).cache().repartition(1).mapPartitions(new FlatMapFunction<Iterator<String>, String>() {
 			/**
 			 * 
 			 */
@@ -133,7 +198,7 @@ public class CommonCascadeSVM {
 			}
 		});
 		
-		svs3.count();
+		System.out.println("svs3 count:"+svs3.count());
 		double endTime=System.currentTimeMillis();	
 		System.out.println("总用时:"+(endTime-startTime)/1000);
 		

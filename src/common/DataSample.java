@@ -29,20 +29,23 @@ public class DataSample {
 
 
 
-		JavaRDD<String> lines = jsc.textFile("hdfs://192.168.2.151:9000/test/hjw/sample/skin_nonskin",1);
-		JavaRDD<String>trainSet= lines.sample(false, 0.4);
+		JavaRDD<String> lines = jsc.textFile("hdfs://192.168.2.151:9000/SVM/SVs/cod-rnaThreeLevelSvs.txt",1);
+		JavaRDD<String>trainSet= lines.sample(false, 0.8);
 /*		JavaRDD<String>subtracttrainSet=lines.subtract(trainSet,1);
 		JavaRDD<String>testSet=subtracttrainSet.sample(false, 0.5);*/
-		JavaRDD<String>testSet=lines.subtract(trainSet,1);
+		//JavaRDD<String>testSet=lines.subtract(trainSet,1);
 		
-		System.out.println("训练集数据条数"+trainSet.count()+"；测试集数据条数"+testSet.count()/*+",subtracttrainSet:"+subtracttrainSet.count()*/);
+/*		System.out.println("训练集数据条数"+trainSet.count()+"；测试集数据条数"+testSet.count()+",subtracttrainSet:"+subtracttrainSet.count());
 		trainSet.saveAsTextFile("hdfs://192.168.2.151:9000/test/hjw/sample/skin_nonskin10WTrain");
-		testSet.saveAsTextFile("hdfs://192.168.2.151:9000/test/hjw/sample/skin_nonskin10WTest");
-		
+		testSet.saveAsTextFile("hdfs://192.168.2.151:9000/test/hjw/sample/skin_nonskin10WTest");*/
+		//对支持向量进行随机抽样
+		System.out.println("训练集数据条数"+trainSet.count());
+		trainSet.saveAsTextFile("hdfs://192.168.2.151:9000/SVM/SVs/cod-rnaThreeLevelSvs80%.txt");
 		
 		
 	
-		
+		jsc.stop();
+		jsc.close();
 
 
 	}

@@ -25,9 +25,9 @@ public class PSO {
 	
 	private static double previous=Double.MAX_VALUE;
 
-	private static int particle_num = 40;// 粒子数
+	private static int particle_num = 20;// 粒子数
 
-	private static int N = 32;// 迭代次数
+	private static int N = 10;// 迭代次数
 
 	private static int c1, c2 = 2;
 

@@ -27,9 +27,9 @@ public class PSO {
 	
 	private static int gbest_fitness_stopcount=0;
 
-	private static int particle_num = 40;// 粒子数
+	private static int particle_num = 20;// 粒子数
 
-	private static int N = 16;// 迭代次数
+	private static int N = 10;// 迭代次数
 
 	private static int c1, c2 = 2;
 

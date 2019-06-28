@@ -8,16 +8,18 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Vector;
 
+import org.apache.commons.collections.IteratorUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.FlatMapFunction;
+
 import SparkStreamingCopyFileDirToHDFS.SaveSvsToHDFS;
 import libsvm.svm_model;
 
-public class CommonCascadeSVM {
+public class TwoLevelImprovementCacheCascadeSVM {
 	public static void main(String[] args) throws InterruptedException, IOException, URISyntaxException {
 		
 		 
@@ -27,13 +29,13 @@ public class CommonCascadeSVM {
 		String predictHDFSPath=args[3];
 		String svscgHDFSPath=args[4];
 		
-		SparkConf conf = new SparkConf().setAppName("SparkCommonCascadeSVM").setJars(new String[] { "E:\\论文实验\\mjsl1.jar" })
+		SparkConf conf = new SparkConf().setAppName("TwoLevelImprovementCacheCascadeSVM").setJars(new String[] { "E:\\论文实验\\mjsl1.jar" })
 				.set("spark.network.timeout", "300")
 				.set("spark.num.executors", "4")
 				.set("spark.executor.cores", "3")
 				.set("spark.executor.memory", "4096m")
 				.set("spark.default.parallelism", "12")
-				.set("spark.executor.extraJavaOptions", "-verbose:gc -XX:+PrintGCDetails -XX:+PrintGCTimeStamps")
+			//	.set("spark.executor.extraJavaOptions", "-verbose:gc -XX:+PrintGCDetails -XX:+PrintGCTimeStamps")
 				.setMaster("spark://192.168.2.151:7077");
 		JavaSparkContext sc = new JavaSparkContext(conf);
 	
@@ -41,8 +43,7 @@ public class CommonCascadeSVM {
 		sc.setLogLevel("WARN");
 		
 		FileSystem fs = FileSystem.get(new URI("hdfs://192.168.2.151:9000"),new Configuration());    
-		//JavaRDD<String> lines = sc.textFile(sampleHDFSPath,12).cache();
-		JavaRDD<String> lines = sc.textFile(sampleHDFSPath).cache().repartition(12);
+		JavaRDD<String> lines = sc.textFile(sampleHDFSPath).repartition(12).cache();
 		double startTime=System.currentTimeMillis();
 		
 		JavaRDD<String> svs1 = lines.mapPartitions(new FlatMapFunction<Iterator<String>, String>() {
@@ -69,9 +70,8 @@ public class CommonCascadeSVM {
 			}
 		});
 		
-	/*	LongAccumulator repartitionNum = CascadeSVM.getInstance(sc);*/		
 		//6    ---   4
-		JavaRDD<String>svs2=svs1.cache().repartition(6).mapPartitions(new FlatMapFunction<Iterator<String>, String>() {
+		JavaRDD<String>svs2=svs1.repartition(6).mapPartitions(new FlatMapFunction<Iterator<String>, String>() {
 			/**
 			 * 
 			 */
@@ -88,7 +88,7 @@ public class CommonCascadeSVM {
 					String[] svRecordArr=svRecords.toArray(new String[svRecords.size()]);
 					MSSvmTrainer mSvmTrainer=new MSSvmTrainer(svRecordArr);
 					svm_model model= mSvmTrainer.train();
-					/*repartitionNum.add(1);*/
+
 					int[] svIndices = model.sv_indices;
 					for(int i=0; i<svIndices.length; i++) {
 						Svs.add(svRecordArr[svIndices[i]-1]);
@@ -98,8 +98,64 @@ public class CommonCascadeSVM {
 				return Svs.iterator();
 			}
 		});
+
+	
+	
+	
+		JavaRDD<String>twoLevelSvs= svs2.cache();
+		// lable:1
+		JavaRDD<String>PositiveSvs= twoLevelSvs.mapPartitions(new  FlatMapFunction<Iterator<String>, String>() {
+			/**
+			 * 
+			 */
+			private static final long serialVersionUID = 2300783931514320728L;
+			List<String> PositiveRecords = new ArrayList<String>();
+			@Override
+			public Iterator<String> call(Iterator<String> arg0) throws Exception {
+				// TODO Auto-generated method stub
+				List<String>svs= IteratorUtils.toList(arg0);
+
+				for (String string : svs) {
+				//	if (!string.split(" ")[0].equals("-1")) {
+					if (!string.split(" ")[0].equals("-1")) {
+						PositiveRecords.add(string);
+					}	
+				}
+				return PositiveRecords.iterator();
+			}
+		});
 		
-		JavaRDD<String>svs3=svs2.cache().repartition(1).mapPartitions(new FlatMapFunction<Iterator<String>, String>() {
+		//lable: -1
+		JavaRDD<String>NegativeSvs=twoLevelSvs.mapPartitions(new  FlatMapFunction<Iterator<String>, String>() {			
+			/**
+			 * 
+			 */
+			private static final long serialVersionUID = -8441737558968376929L;
+			List<String> NegativeRecords = new ArrayList<String>();
+			@Override
+			public Iterator<String> call(Iterator<String> arg0) throws Exception {
+				// TODO Auto-generated method stub
+				
+				List<String>svs= IteratorUtils.toList(arg0);
+				
+				for (String string : svs) {
+					//if (string.split(" ")[0].equals("-1")) {
+					if (string.split(" ")[0].equals("-1")) {
+						NegativeRecords.add(string);
+					}	
+				}
+				
+				return NegativeRecords.iterator();
+			}
+		});
+				
+		//System.out.println("PositiveSvs Size:"+PositiveSvs.count()+";NegativeSvs Size:"+NegativeSvs.count());
+		
+		
+		JavaRDD<String>Positive80TrainSet= PositiveSvs.sample(false, 0.8);
+		JavaRDD<String>Negative80TrainSet= NegativeSvs.sample(false, 0.8);
+		
+		JavaRDD<String>svs3=Positive80TrainSet.union(Negative80TrainSet).repartition(1).mapPartitions(new FlatMapFunction<Iterator<String>, String>() {
 			/**
 			 * 
 			 */
@@ -133,7 +189,7 @@ public class CommonCascadeSVM {
 			}
 		});
 		
-		svs3.count();
+		System.out.println("svs3 count:"+svs3.count());
 		double endTime=System.currentTimeMillis();	
 		System.out.println("总用时:"+(endTime-startTime)/1000);
 		

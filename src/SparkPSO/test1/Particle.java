@@ -65,11 +65,11 @@ public class Particle implements Serializable {
 	//public double Xmin = Math.pow(2, -8);
 	//public double Xmax = Math.pow(2, 8);//通过第一次迭代确定第二次的搜索范围
 
-	public double Cmin=Math.pow(2, -5);
-	public double Cmax=Math.pow(2, 14);
+	public double Cmin=Math.pow(2, -4);
+	public double Cmax=Math.pow(2, 1);
 	
-	public double Gmin=Math.pow(2, -15);
-	public double Gmax=Math.pow(2, -4);
+	public double Gmin=Math.pow(2, -6);
+	public double Gmax=Math.pow(2, -1);
 	
 	/**
 	 * 根据当前位置计算适应值
@@ -84,7 +84,7 @@ public class Particle implements Serializable {
 		/*
 		 * Path pt = new Path(new URI("hdfs://datanode1:9000/SVM/DataSet/a8a"));
 		 */
-		Path pt = new Path(new URI("hdfs://datanode1:9000/test/hjw/sample/a5a"));
+		Path pt = new Path(new URI("hdfs://datanode1:9000/test/hjw/sample/cod-rnaSvs.txt"));
 		svRecords = ReadTrainFromHDFS(fs, pt);
 		String[] svr = svRecords.toArray(new String[svRecords.size()]);
 		MSSvmTrainer svmTrainer = new MSSvmTrainer(svr, X[0], X[1]);

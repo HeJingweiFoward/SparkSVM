@@ -1,7 +1,8 @@
 /CollaborativeFiltering/
 /SparkPSO/
+/SparkSVR/
 /SparkStreaming/
+/spark/
 /SparkStreamingCopyFileDirToHDFS/
 /common/
 /parallelSVM/
-/spark/
